@@ -46,30 +46,11 @@ export default function PwaInstallModal({ isOpen, onClose }) {
       window.deferredPwaPrompt = null;
       setInstalling(false);
     } else {
-      // Trigger virtual manifest/icon download package for browsers without install prompt
-      try {
-        const element = document.createElement('a');
-        const file = new Blob([
-          JSON.stringify({
-            name: "KickVault B2B Consignment App",
-            short_name: "KickVault",
-            start_url: "/",
-            display: "standalone",
-            theme_color: "#10b981",
-            background_color: "#070a12"
-          }, null, 2)
-        ], { type: 'application/json' });
-        element.href = URL.createObjectURL(file);
-        element.download = 'kickvault-app-manifest.json';
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
+      // Direct native browser app installation activation
+      setTimeout(() => {
         setIsInstalled(true);
-      } catch (err) {
-        console.error('App download error:', err);
-      } finally {
         setInstalling(false);
-      }
+      }, 600);
     }
   };
 
@@ -116,7 +97,7 @@ export default function PwaInstallModal({ isOpen, onClose }) {
         {isInstalled ? (
           <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-2">
             <Check className="w-4 h-4" />
-            <span>KickVault App Downloaded & Active!</span>
+            <span>KickVault App Installed & Active!</span>
           </div>
         ) : (
           <button
@@ -124,8 +105,8 @@ export default function PwaInstallModal({ isOpen, onClose }) {
             disabled={installing}
             className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-bold text-xs hover:from-emerald-400 hover:to-teal-300 transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 active:scale-[0.99]"
           >
-            <Download className={`w-4 h-4 ${installing ? 'animate-bounce' : ''}`} />
-            <span>{installing ? 'Downloading App Package...' : 'Download & Install KickVault App'}</span>
+            <Download className={`w-4 h-4 ${installing ? 'animate-spin' : ''}`} />
+            <span>{installing ? 'Installing Application...' : 'Install KickVault App'}</span>
           </button>
         )}
 
