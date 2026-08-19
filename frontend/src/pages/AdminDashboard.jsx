@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Package, TrendingUp, RefreshCw, AlertCircle, ShieldCheck, ArrowUpRight, Clock, Check } from 'lucide-react';
+import { Users, Package, TrendingUp, RefreshCw, AlertCircle, ShieldCheck, ArrowUpRight, Clock, Check, UserPlus } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { API } from '../api';
 import StatusBadge from '../components/StatusBadge';
+import VendorOnboardModal from '../components/VendorOnboardModal';
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
+  const [isOnboardOpen, setIsOnboardOpen] = useState(false);
 
   const loadData = async () => {
     try {
@@ -57,15 +59,25 @@ export default function AdminDashboard() {
           <p className="text-xs text-slate-400 mt-1">Platform metrics, vendor oversight, pricing queues & scheduled sync operations</p>
         </div>
 
-        {/* 1-Click Scheduled Sync Trigger */}
-        <button
-          onClick={handleTriggerCronSync}
-          disabled={syncing}
-          className="btn-violet px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 self-start md:self-auto disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-          <span>{syncing ? 'Syncing CSV...' : 'Run Stock Sync (Cron)'}</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsOnboardOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-300 transition"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Onboard New Vendor</span>
+          </button>
+
+          {/* 1-Click Scheduled Sync Trigger */}
+          <button
+            onClick={handleTriggerCronSync}
+            disabled={syncing}
+            className="btn-violet px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 self-start md:self-auto disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+            <span>{syncing ? 'Syncing CSV...' : 'Run Stock Sync (Cron)'}</span>
+          </button>
+        </div>
       </div>
 
       {syncMessage && (
@@ -198,6 +210,12 @@ export default function AdminDashboard() {
           </Link>
         </div>
       </div>
+
+      <VendorOnboardModal
+        isOpen={isOnboardOpen}
+        onClose={() => setIsOnboardOpen(false)}
+        onVendorCreated={() => loadData()}
+      />
     </div>
   );
 }
