@@ -1,16 +1,27 @@
 import db from '../database.js';
+import nodemailer from 'nodemailer';
 
 export const STAKEHOLDER_EMAILS = [
   'itmealanbiju@gmail.com',
-  'dephr@crepdogcrew.com',
-  'fo3@crepdogcrew.com',
-  'hr@crepdogcrew.com'
+  'alanthomasbiju01@gmail.com'
+  // 'dephr@crepdogcrew.com',
+  // 'fo3@crepdogcrew.com',
+  // 'hr@crepdogcrew.com'
 ];
 
-export function sendTransactionalEmail({ to, subject, template, data = {} }) {
+// Configure Real Gmail SMTP Transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.SMTP_USER || 'alanthomasbiju01@gmail.com',
+    pass: process.env.SMTP_PASS || 'pinhijqoqzmipbsx'
+  }
+});
+
+export async function sendTransactionalEmail({ to, subject, template, data = {} }) {
   try {
     const id = `MAIL-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
-    const fromEmail = 'no-reply@kickvault.test';
+    const fromEmail = process.env.SMTP_USER || 'alanthomasbiju01@gmail.com';
     const sentAt = new Date().toISOString();
 
     let bodyHtml = '';
@@ -24,7 +35,7 @@ export function sendTransactionalEmail({ to, subject, template, data = {} }) {
             <p>Thank you for registering your store (<strong>${data.businessName || 'Consignment Partner'}</strong>) with KickVault.</p>
             <p>To start listing sneakers and receiving disbursements, please complete your instant PAN KYC verification.</p>
             <hr style="border-color: #334155; margin: 20px 0;" />
-            <p style="font-size: 11px; color: #94a3b8;">KickVault B2B Consignment Operations • Automated Email Engine</p>
+            <p style="font-size: 11px; color: #94a3b8;">KickVault B2B Consignment Operations • Automated Real Email Engine</p>
           </div>
         `;
         break;
@@ -145,12 +156,25 @@ export function sendTransactionalEmail({ to, subject, template, data = {} }) {
         break;
     }
 
+    // Save to local database email logs
     db.prepare(`
       INSERT INTO email_logs (id, toEmail, fromEmail, subject, template, bodyHtml, sentAt)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(id, to, fromEmail, subject, template || 'SYSTEM', bodyHtml, sentAt);
 
-    console.log(`\n✉️ [MOCK EMAIL DISPATCH] To: ${to} | Subject: "${subject}" | ID: ${id}`);
+    console.log(`\n✉️ [DISPATCHING REAL EMAIL VIA GMAIL SMTP] To: ${to} | Subject: "${subject}" | ID: ${id}`);
+
+    // Dispatch real email via Gmail SMTP (non-blocking)
+    transporter.sendMail({
+      from: `"KickVault Portal" <${fromEmail}>`,
+      to,
+      subject,
+      html: bodyHtml
+    }).then(info => {
+      console.log(`✅ [REAL GMAIL SENT] MessageId: ${info.messageId} | Recipient: ${to}`);
+    }).catch(err => {
+      console.error(`⚠️ [GMAIL SMTP WARNING] Could not deliver to ${to}:`, err.message);
+    });
 
     return { id, success: true, to, subject };
   } catch (err) {
@@ -159,7 +183,7 @@ export function sendTransactionalEmail({ to, subject, template, data = {} }) {
   }
 }
 
-// Dispatches email to all 4 requested stakeholders simultaneously
+// Dispatches email to all stakeholders simultaneously
 export function notifyStakeholders({ subject, template, data = {} }) {
   STAKEHOLDER_EMAILS.forEach((toEmail) => {
     sendTransactionalEmail({
