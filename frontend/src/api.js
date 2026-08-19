@@ -66,6 +66,7 @@ export const API = {
   verifyKyc: (data) => apiRequest('/kyc/verify', 'POST', typeof data === 'string' ? { pan: data } : data),
   getKycRecord: (email = '') => apiRequest(`/kyc/record${email ? `?email=${encodeURIComponent(email)}` : ''}`),
   getAdminKycQueue: () => apiRequest('/admin/kyc/queue'),
+  getAdminVendors: () => apiRequest('/admin/vendors'),
   respondAdminKyc: (id, action, rejectionReason = '') => apiRequest(`/admin/kyc/${encodeURIComponent(id)}/respond`, 'POST', { action, rejectionReason }),
   getEmails: () => apiRequest('/emails'),
 

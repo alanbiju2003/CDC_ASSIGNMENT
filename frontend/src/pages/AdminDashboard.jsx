@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Package, TrendingUp, RefreshCw, AlertCircle, ShieldCheck, ArrowUpRight, Clock, Check, UserPlus } from 'lucide-react';
+import { Users, Package, TrendingUp, RefreshCw, AlertCircle, ShieldCheck, ArrowUpRight, Clock, Check, UserPlus, Store } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { API } from '../api';
 import StatusBadge from '../components/StatusBadge';
@@ -8,6 +8,7 @@ import VendorOnboardModal from '../components/VendorOnboardModal';
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
+  const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
@@ -16,8 +17,12 @@ export default function AdminDashboard() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const res = await API.getDashboardStats();
-      setData(res);
+      const [resStats, resVendors] = await Promise.all([
+        API.getDashboardStats(),
+        API.getAdminVendors().catch(() => ({ vendors: [] }))
+      ]);
+      setData(resStats);
+      setVendors(resVendors.vendors || []);
     } catch (err) {
       console.error('Error loading admin stats:', err);
     } finally {
@@ -56,7 +61,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div>
           <h1 className="text-2xl font-bold font-heading text-white tracking-tight">Admin Executive HQ</h1>
-          <p className="text-xs text-slate-400 mt-1">Platform metrics, vendor oversight, pricing queues & scheduled sync operations</p>
+          <p className="text-xs text-slate-400 mt-1">Platform metrics, vendor directory, pricing queues & stock sync operations</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -105,55 +110,137 @@ export default function AdminDashboard() {
 
         <div className="p-5 rounded-2xl bg-[#121827] border border-slate-800 space-y-3">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Live Vault Listings</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">Live Inventory</span>
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
               <Package className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-emerald-400 font-heading">{stats.liveListings || 0}</div>
-          <p className="text-[11px] text-slate-500">Priced & active for buyers</p>
+          <div className="text-2xl font-bold text-white font-heading">{stats.liveListings || 0}</div>
+          <div className="text-[11px] text-slate-400">
+            {stats.totalPairsStock || 0} Total sneaker pairs in consignment
+          </div>
         </div>
 
         <div className="p-5 rounded-2xl bg-[#121827] border border-slate-800 space-y-3">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Total Sold Value</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+            <span className="text-xs font-semibold uppercase tracking-wider">Total Gross Sold</span>
+            <div className="p-2 rounded-xl bg-teal-500/10 text-teal-400">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-amber-400 font-heading">
-            ₹{(stats.totalSoldVal || 0).toLocaleString('en-IN')}
+          <div className="text-2xl font-bold text-white font-heading">
+            ₹{(stats.totalGrossSoldValue || 0).toLocaleString('en-IN')}
           </div>
-          <p className="text-[11px] text-slate-500">Gross sales across platform</p>
+          <div className="text-[11px] text-slate-400">
+            Across {stats.soldCount || 0} finalized sales
+          </div>
         </div>
 
         <div className="p-5 rounded-2xl bg-[#121827] border border-slate-800 space-y-3">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Pending Price Requests</span>
-            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+            <span className="text-xs font-semibold uppercase tracking-wider">Pending Action Queue</span>
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-blue-400 font-heading">{stats.pendingPriceReqs || 0}</div>
-          <Link to="/price-requests" className="text-[11px] text-blue-400 hover:underline block">
-            Review vendor price changes →
-          </Link>
+          <div className="text-2xl font-bold text-amber-400 font-heading">
+            {(stats.pendingKycVendors || 0) + (stats.pendingPriceReqs || 0) + (stats.pendingReturnReqs || 0)}
+          </div>
+          <div className="text-[11px] text-slate-400">
+            KYC, Pricing & Return items needing review
+          </div>
         </div>
       </div>
 
-      {/* Main Chart Section */}
+      {/* Registered Vendors Directory */}
       <div className="p-6 rounded-2xl bg-[#121827] border border-slate-800 space-y-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-bold text-white font-heading">Consignment Sales & Revenue Trend</h3>
-            <p className="text-xs text-slate-400">Monthly gross sales volume across all consignment vendors</p>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+              <Store className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold font-heading text-white">Registered Vendors Directory</h3>
+              <p className="text-xs text-slate-400">Manage onboarded consignment partner accounts</p>
+            </div>
           </div>
-          <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/30">
-            +38.5% Growth
-          </span>
+          <button
+            onClick={() => setIsOnboardOpen(true)}
+            className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold hover:bg-emerald-500/20 transition flex items-center gap-1.5"
+          >
+            <UserPlus className="w-3.5 h-3.5" /> Onboard Vendor
+          </button>
         </div>
 
-        <div className="h-64 w-full pt-4">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-900/90 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
+              <tr>
+                <th className="p-3.5">Vendor / Store</th>
+                <th className="p-3.5">Email Address</th>
+                <th className="p-3.5">PAN Number</th>
+                <th className="p-3.5">Inventory Stock</th>
+                <th className="p-3.5">Account Status</th>
+                <th className="p-3.5">Onboarded</th>
+                <th className="p-3.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60">
+              {vendors.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-slate-500">
+                    No vendors registered yet. Click "Onboard Vendor" to add a vendor.
+                  </td>
+                </tr>
+              ) : (
+                vendors.map((v) => (
+                  <tr key={v.id} className="hover:bg-slate-900/40 transition">
+                    <td className="p-3.5 font-semibold text-slate-100">
+                      <div>{v.name}</div>
+                      <div className="text-[11px] text-slate-400 font-normal">{v.businessName || 'Independent Vendor'}</div>
+                    </td>
+                    <td className="p-3.5 text-slate-300 font-mono">{v.email}</td>
+                    <td className="p-3.5 font-mono text-slate-300">{v.pan || '—'}</td>
+                    <td className="p-3.5">
+                      <span className="font-bold text-emerald-400">{v.itemCount} items</span>
+                      <span className="text-slate-500 ml-1">({v.totalStock} pairs)</span>
+                    </td>
+                    <td className="p-3.5">
+                      <StatusBadge status={v.status} />
+                    </td>
+                    <td className="p-3.5 text-slate-400">
+                      {new Date(v.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="p-3.5 text-right">
+                      {v.status === 'pending_kyc' ? (
+                        <Link
+                          to="/admin/kyc"
+                          className="px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[11px] font-semibold hover:bg-amber-500/20 transition"
+                        >
+                          Approve KYC →
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/inventory"
+                          className="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 border border-slate-700 text-[11px] font-medium hover:text-white transition"
+                        >
+                          View Stock →
+                        </Link>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Revenue Sales Chart */}
+      <div className="p-6 rounded-2xl bg-[#121827] border border-slate-800 space-y-4">
+        <h3 className="text-base font-bold font-heading text-white">Consignment Sales & Revenue Trend</h3>
+        <p className="text-xs text-slate-400">Monthly gross sales volume across all consignment vendors</p>
+        <div className="h-64 pt-2">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>

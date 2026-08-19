@@ -66,42 +66,6 @@ export default function Navbar() {
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 md:gap-3">
-          {/* Quick Switcher for Reviewers */}
-          <div className="hidden lg:flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 p-1 rounded-xl">
-            <span className="text-[10px] text-slate-400 font-semibold px-2 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-amber-400" /> Switch Test User:
-            </span>
-            <button
-              onClick={() => handleSwitchAccount('admin')}
-              className={`text-xs px-2.5 py-1 rounded-lg transition-all font-medium flex items-center gap-1 ${
-                user?.email === 'admin@kickvault.test'
-                  ? 'bg-violet-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Shield className="w-3 h-3" /> Admin
-            </button>
-            <button
-              onClick={() => handleSwitchAccount('vendor1')}
-              className={`text-xs px-2.5 py-1 rounded-lg transition-all font-medium flex items-center gap-1 ${
-                user?.email === 'vendor1@example.test'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Store className="w-3 h-3" /> Vendor 1 (Active)
-            </button>
-            <button
-              onClick={() => handleSwitchAccount('vendor2')}
-              className={`text-xs px-2.5 py-1 rounded-lg transition-all font-medium flex items-center gap-1 ${
-                user?.email === 'vendor2@example.test'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <UserCheck className="w-3 h-3" /> Vendor 2 (Pending KYC)
-            </button>
-          </div>
 
           {/* PWA Download Button */}
           <button

@@ -177,37 +177,6 @@ export default function Login() {
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
-
-            {/* Reviewer Quick Presets */}
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
-              <div className="text-[11px] font-bold text-slate-400 flex items-center justify-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Reviewer Preset Logins:
-              </div>
-              <div className="grid grid-cols-3 gap-1.5 text-[11px]">
-                <button
-                  type="button"
-                  onClick={() => setQuickFill('admin')}
-                  className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-violet-600/30 text-violet-300 border border-slate-700 hover:border-violet-500/50 transition-colors font-medium truncate"
-                >
-                  Admin HQ
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setQuickFill('vendor1')}
-                  className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-600/30 text-emerald-300 border border-slate-700 hover:border-emerald-500/50 transition-colors font-medium truncate"
-                >
-                  Vendor 1 (Active)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setQuickFill('vendor2')}
-                  className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-amber-600/30 text-amber-300 border border-slate-700 hover:border-amber-500/50 transition-colors font-medium truncate"
-                >
-                  Vendor 2 (KYC)
-                </button>
-              </div>
-            </div>
-
           </div>
         </div>
 

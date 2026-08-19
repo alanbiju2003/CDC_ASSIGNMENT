@@ -189,6 +189,28 @@ router.get('/admin/kyc/queue', requireAuth, requireAdmin, (req, res) => {
   }
 });
 
+// GET /admin/vendors (Admin fetches all vendors with status and stock stats)
+router.get('/admin/vendors', requireAuth, requireAdmin, (req, res) => {
+  try {
+    const vendors = db.prepare(`
+      SELECT 
+        u.id, u.email, u.name, u.businessName, u.pan, u.role, u.status, u.createdAt,
+        COUNT(s.id) as itemCount,
+        COALESCE(SUM(s.quantity), 0) as totalStock
+      FROM users u
+      LEFT JOIN shoes s ON u.email = s.vendorEmail
+      WHERE u.role = 'vendor'
+      GROUP BY u.id
+      ORDER BY u.createdAt DESC
+    `).all();
+
+    return res.json({ vendors });
+  } catch (err) {
+    console.error('Error fetching vendors list:', err);
+    return res.status(500).json({ error: 'Failed to fetch vendors list.' });
+  }
+});
+
 // POST /kyc/verify (Vendor submits or direct verifies KYC)
 router.post('/kyc/verify', requireAuth, (req, res) => {
   try {
