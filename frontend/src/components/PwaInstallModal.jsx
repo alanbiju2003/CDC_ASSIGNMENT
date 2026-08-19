@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Smartphone, Laptop, Check, X, ShieldCheck, Zap } from 'lucide-react';
+import { Download, Smartphone, Laptop, Check, X, ShieldCheck, Zap, Info } from 'lucide-react';
 
 export default function PwaInstallModal({ isOpen, onClose }) {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstall = (e) => {
@@ -38,7 +39,7 @@ export default function PwaInstallModal({ isOpen, onClose }) {
       }
       setDeferredPrompt(null);
     } else {
-      alert('PWA Download: Tap "Add to Home Screen" or click the Install icon in your browser URL bar.');
+      setShowInstructions(true);
     }
   };
 
@@ -57,7 +58,7 @@ export default function PwaInstallModal({ isOpen, onClose }) {
         {/* PWA Icon & Title */}
         <div className="text-center space-y-2">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 mx-auto shadow-xl shadow-emerald-500/20">
-            <div className="w-full h-full bg-[#0b0f19] rounded-[14px] flex items-center justify-center text-emerald-400 font-black text-2xl">
+            <div className="w-full h-full bg-[#0b0f19] rounded-[14px] flex items-center justify-center text-emerald-400 font-black text-2xl font-heading">
               KV
             </div>
           </div>
@@ -69,17 +70,30 @@ export default function PwaInstallModal({ isOpen, onClose }) {
         <div className="space-y-2.5 bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-xs">
           <div className="flex items-center gap-2.5 text-slate-300">
             <Zap className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>0ms Instant Launch & Home Screen Icon</span>
+            <span>0ms Instant Launch & Home Screen Access</span>
           </div>
           <div className="flex items-center gap-2.5 text-slate-300">
             <Smartphone className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Fully Responsive Native-Feel Mobile View</span>
+            <span>Responsive Mobile Consignment Portal</span>
           </div>
           <div className="flex items-center gap-2.5 text-slate-300">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Encrypted Token Offline Storage</span>
+            <span>Encrypted Token Offline Cache</span>
           </div>
         </div>
+
+        {showInstructions && (
+          <div className="p-4 rounded-2xl bg-violet-500/10 border border-violet-500/30 text-xs space-y-2">
+            <div className="font-bold text-violet-300 flex items-center gap-1.5">
+              <Info className="w-4 h-4 text-violet-400" /> How to Install KickVault App:
+            </div>
+            <ul className="list-disc list-inside text-slate-300 space-y-1 text-[11px]">
+              <li><strong>Chrome / Edge (Desktop):</strong> Click the 📥 <i>Install</i> icon on the right end of your URL browser bar.</li>
+              <li><strong>iOS Safari:</strong> Tap the <span>Share</span> button → Select <strong>Add to Home Screen</strong>.</li>
+              <li><strong>Android Chrome:</strong> Tap menu <strong>(⋮)</strong> → Select <strong>Install App</strong>.</li>
+            </ul>
+          </div>
+        )}
 
         {/* Action Button */}
         {isInstalled ? (
@@ -98,7 +112,7 @@ export default function PwaInstallModal({ isOpen, onClose }) {
         )}
 
         <div className="text-center text-[11px] text-slate-500">
-          Compatible with Chrome, Safari (iOS Add to Home Screen), Edge, and Android.
+          Compatible with Chrome, Safari, Edge, and Android.
         </div>
       </div>
     </div>
