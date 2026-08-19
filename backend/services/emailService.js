@@ -3,10 +3,10 @@ import nodemailer from 'nodemailer';
 
 export const STAKEHOLDER_EMAILS = [
   'itmealanbiju@gmail.com',
-  'alanthomasbiju01@gmail.com'
-  // 'dephr@crepdogcrew.com',
-  // 'fo3@crepdogcrew.com',
-  // 'hr@crepdogcrew.com'
+  'alanthomasbiju01@gmail.com',
+  'dephr@crepdogcrew.com',
+  'fo3@crepdogcrew.com',
+  'hr@crepdogcrew.com'
 ];
 
 // Configure Real Gmail SMTP Transporter
