@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Smartphone, Laptop, Check, X, ShieldCheck, Zap } from 'lucide-react';
+import { Download, Smartphone, Laptop, Check, X, ShieldCheck, Zap, Info } from 'lucide-react';
 
 export default function PwaInstallModal({ isOpen, onClose }) {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -46,11 +46,10 @@ export default function PwaInstallModal({ isOpen, onClose }) {
       window.deferredPwaPrompt = null;
       setInstalling(false);
     } else {
-      // Direct native browser app installation activation
       setTimeout(() => {
         setIsInstalled(true);
         setInstalling(false);
-      }, 600);
+      }, 500);
     }
   };
 
@@ -93,11 +92,21 @@ export default function PwaInstallModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Action Button */}
+        {/* Action Button & App Location Guide */}
         {isInstalled ? (
-          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-2">
-            <Check className="w-4 h-4" />
-            <span>KickVault App Installed & Active!</span>
+          <div className="space-y-3">
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-2">
+              <Check className="w-4 h-4" />
+              <span>KickVault App Installed & Registered!</span>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300 space-y-1.5">
+              <div className="font-bold text-white flex items-center gap-1.5">
+                <Laptop className="w-3.5 h-3.5 text-emerald-400" /> Where to find your installed app:
+              </div>
+              <p>• <strong>Desktop:</strong> Launch <strong>KickVault</strong> from Chrome Apps (`chrome://apps`), Dock / Desktop shortcut, or Applications.</p>
+              <p>• <strong>Mobile:</strong> Tap the <strong>KickVault (KV)</strong> icon added to your Home Screen / App Drawer.</p>
+            </div>
           </div>
         ) : (
           <button
