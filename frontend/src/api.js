@@ -58,6 +58,7 @@ export async function apiRequest(endpoint, method = 'GET', data = null, customHe
 
 export const API = {
   // Auth & KYC
+  login: (email, password) => apiRequest('/auth/login', 'POST', { email, password }),
   loginVendor: (email, password) => apiRequest('/auth/vendor/login', 'POST', { email, password }),
   loginAdmin: (email, password) => apiRequest('/auth/admin/login', 'POST', { email, password }),
   registerVendor: (data) => apiRequest('/auth/vendor/register', 'POST', data),

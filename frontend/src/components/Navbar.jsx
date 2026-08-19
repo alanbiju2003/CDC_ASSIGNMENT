@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, MessageSquare, Mail, Shield, Store, LogOut, RefreshCw, Sparkles, UserCheck } from 'lucide-react';
+import { Bell, MessageSquare, Mail, Shield, Store, LogOut, RefreshCw, Sparkles, UserCheck, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { API } from '../api';
 import NotificationDrawer from './NotificationDrawer';
 import ChatDrawer from './ChatDrawer';
 import EmailDrawer from './EmailDrawer';
+import PwaInstallModal from './PwaInstallModal';
 
 export default function Navbar() {
   const { user, role, logout, loginAdmin, loginVendor } = useAuth();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isEmailOpen, setIsEmailOpen] = useState(false);
+  const [isPwaOpen, setIsPwaOpen] = useState(false);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="h-16 border-b border-slate-800 bg-[#0f172a]/95 backdrop-blur sticky top-0 z-40 px-6 flex items-center justify-between">
+      <header className="h-16 border-b border-slate-800 bg-[#0f172a]/95 backdrop-blur sticky top-0 z-40 px-4 md:px-6 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 flex items-center justify-center shadow-lg shadow-emerald-500/20">
@@ -53,9 +55,9 @@ export default function Navbar() {
             </div>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white tracking-wide flex items-center gap-2 font-heading">
+            <h1 className="text-base md:text-lg font-bold text-white tracking-wide flex items-center gap-2 font-heading">
               KICKVAULT
-              <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-slate-800 text-emerald-400 border border-emerald-500/30">
+              <span className="hidden sm:inline-block text-[10px] font-normal px-2 py-0.5 rounded-full bg-slate-800 text-emerald-400 border border-emerald-500/30">
                 B2B Consignment
               </span>
             </h1>
@@ -63,9 +65,9 @@ export default function Navbar() {
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           {/* Quick Switcher for Reviewers */}
-          <div className="hidden md:flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 p-1 rounded-xl">
+          <div className="hidden lg:flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 p-1 rounded-xl">
             <span className="text-[10px] text-slate-400 font-semibold px-2 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-amber-400" /> Switch Test User:
             </span>
@@ -101,6 +103,16 @@ export default function Navbar() {
             </button>
           </div>
 
+          {/* PWA Download Button */}
+          <button
+            onClick={() => setIsPwaOpen(true)}
+            className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-medium text-xs flex items-center gap-1.5 transition"
+            title="Download & Install KickVault App (PWA)"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Install App</span>
+          </button>
+
           {/* Notifications Trigger */}
           <button
             onClick={() => setIsNotifOpen(true)}
@@ -119,51 +131,37 @@ export default function Navbar() {
           <button
             onClick={() => setIsChatOpen(true)}
             className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-colors"
-            title="Vendor Chat"
+            title="Vendor ↔ Admin Chat"
           >
-            <MessageSquare className="w-4 h-4 text-violet-400" />
+            <MessageSquare className="w-4 h-4" />
           </button>
 
-          {/* Transactional Mailbox Trigger */}
+          {/* Mailbox Drawer Trigger */}
           <button
             onClick={() => setIsEmailOpen(true)}
-            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-colors"
-            title="KickVault Mailbox"
+            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-colors relative"
+            title="Transactional Email Logs"
           >
-            <Mail className="w-4 h-4 text-teal-400" />
+            <Mail className="w-4 h-4 text-emerald-400" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400"></span>
           </button>
 
-          {/* User Profile */}
-          <div className="flex items-center gap-3 pl-2 border-l border-slate-800">
-            <div className="text-right hidden sm:block">
-              <div className="text-xs font-semibold text-white">{user?.name || user?.email}</div>
-              <div className="text-[10px] text-slate-400 capitalize flex items-center justify-end gap-1">
-                {role === 'admin' ? (
-                  <span className="text-violet-400 font-semibold flex items-center gap-0.5">
-                    <Shield className="w-2.5 h-2.5" /> Admin HQ
-                  </span>
-                ) : (
-                  <span className="text-emerald-400 font-semibold flex items-center gap-0.5">
-                    <Store className="w-2.5 h-2.5" /> {user?.businessName || 'Vendor'}
-                  </span>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={logout}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/30 transition-colors"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+          {/* Logout */}
+          <button
+            onClick={logout}
+            className="p-2 rounded-xl bg-slate-800/80 hover:bg-red-500/20 border border-slate-700 hover:border-red-500/30 text-slate-400 hover:text-red-400 transition-colors"
+            title="Sign Out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </header>
 
-      {/* Slideout Drawers */}
+      {/* Slide-over Drawers & Modals */}
       <NotificationDrawer isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} />
       <ChatDrawer isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       <EmailDrawer isOpen={isEmailOpen} onClose={() => setIsEmailOpen(false)} />
+      <PwaInstallModal isOpen={isPwaOpen} onClose={() => setIsPwaOpen(false)} />
     </>
   );
 }

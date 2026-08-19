@@ -26,6 +26,14 @@ export function AuthProvider({ children }) {
     loadInitialUser();
   }, []);
 
+  const login = async (email, password) => {
+    const res = await API.login(email, password);
+    setAuthToken(res.token);
+    setUser(res.user);
+    setActiveRole(res.user.role);
+    return res.user;
+  };
+
   const loginVendor = async (email, password) => {
     const res = await API.loginVendor(email, password);
     setAuthToken(res.token);
@@ -73,6 +81,7 @@ export function AuthProvider({ children }) {
         user,
         role: activeRole || user?.role,
         loading,
+        login,
         loginVendor,
         loginAdmin,
         registerVendor,

@@ -70,6 +70,33 @@ router.post('/auth/vendor/register', (req, res) => {
   }
 });
 
+// POST /auth/login (Unified Smart Login)
+router.post('/auth/login', loginRateLimiter, (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required.' });
+    }
+
+    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    if (!user || !bcrypt.compareSync(password, user.password)) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    const token = generateToken(user);
+    const { password: _, ...userWithoutPassword } = user;
+
+    return res.json({
+      message: 'Login successful.',
+      user: userWithoutPassword,
+      token
+    });
+  } catch (err) {
+    console.error('Unified login error:', err);
+    return res.status(500).json({ error: 'Login failed.' });
+  }
+});
+
 // POST /auth/vendor/login
 router.post('/auth/vendor/login', loginRateLimiter, (req, res) => {
   try {
