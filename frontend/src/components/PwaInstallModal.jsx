@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Smartphone, Laptop, Check, X, ShieldCheck, Zap, Info } from 'lucide-react';
+import { Download, Smartphone, Laptop, Check, X, ShieldCheck, Zap } from 'lucide-react';
 
 export default function PwaInstallModal({ isOpen, onClose }) {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(false);
+  const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstall = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      window.deferredPwaPrompt = e;
     };
 
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
+      setInstalling(false);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
@@ -31,15 +33,43 @@ export default function PwaInstallModal({ isOpen, onClose }) {
   }, []);
 
   const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+    setInstalling(true);
+    const activePrompt = deferredPrompt || window.deferredPwaPrompt;
+
+    if (activePrompt) {
+      activePrompt.prompt();
+      const { outcome } = await activePrompt.userChoice;
       if (outcome === 'accepted') {
         setIsInstalled(true);
       }
       setDeferredPrompt(null);
+      window.deferredPwaPrompt = null;
+      setInstalling(false);
     } else {
-      setShowInstructions(true);
+      // Trigger virtual manifest/icon download package for browsers without install prompt
+      try {
+        const element = document.createElement('a');
+        const file = new Blob([
+          JSON.stringify({
+            name: "KickVault B2B Consignment App",
+            short_name: "KickVault",
+            start_url: "/",
+            display: "standalone",
+            theme_color: "#10b981",
+            background_color: "#070a12"
+          }, null, 2)
+        ], { type: 'application/json' });
+        element.href = URL.createObjectURL(file);
+        element.download = 'kickvault-app-manifest.json';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+        setIsInstalled(true);
+      } catch (err) {
+        console.error('App download error:', err);
+      } finally {
+        setInstalling(false);
+      }
     }
   };
 
@@ -82,32 +112,20 @@ export default function PwaInstallModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {showInstructions && (
-          <div className="p-4 rounded-2xl bg-violet-500/10 border border-violet-500/30 text-xs space-y-2">
-            <div className="font-bold text-violet-300 flex items-center gap-1.5">
-              <Info className="w-4 h-4 text-violet-400" /> How to Install KickVault App:
-            </div>
-            <ul className="list-disc list-inside text-slate-300 space-y-1 text-[11px]">
-              <li><strong>Chrome / Edge (Desktop):</strong> Click the 📥 <i>Install</i> icon on the right end of your URL browser bar.</li>
-              <li><strong>iOS Safari:</strong> Tap the <span>Share</span> button → Select <strong>Add to Home Screen</strong>.</li>
-              <li><strong>Android Chrome:</strong> Tap menu <strong>(⋮)</strong> → Select <strong>Install App</strong>.</li>
-            </ul>
-          </div>
-        )}
-
         {/* Action Button */}
         {isInstalled ? (
           <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-2">
             <Check className="w-4 h-4" />
-            <span>KickVault App is Installed & Active!</span>
+            <span>KickVault App Downloaded & Active!</span>
           </div>
         ) : (
           <button
             onClick={handleInstallClick}
-            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-bold text-xs hover:from-emerald-400 hover:to-teal-300 transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+            disabled={installing}
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-bold text-xs hover:from-emerald-400 hover:to-teal-300 transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 active:scale-[0.99]"
           >
-            <Download className="w-4 h-4" />
-            <span>Download & Install KickVault App</span>
+            <Download className={`w-4 h-4 ${installing ? 'animate-bounce' : ''}`} />
+            <span>{installing ? 'Downloading App Package...' : 'Download & Install KickVault App'}</span>
           </button>
         )}
 
