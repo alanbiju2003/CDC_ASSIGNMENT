@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Send, X, User } from 'lucide-react';
+import { io } from 'socket.io-client';
 import { API } from '../api';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,8 +11,9 @@ export default function ChatDrawer({ isOpen, onClose }) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const socketRef = useRef(null);
 
-  // If user is vendor, selectedVendor is their own email. If admin, default to vendor1@example.test
+  // Default vendor for Admin vs Vendor
   useEffect(() => {
     if (user) {
       if (user.role === 'vendor') {
@@ -22,27 +24,49 @@ export default function ChatDrawer({ isOpen, onClose }) {
     }
   }, [user]);
 
-  const loadMessages = async () => {
+  // Load chat messages (silent flag prevents spinner on auto-sync)
+  const fetchMessages = async (silent = false) => {
     if (!selectedVendor) return;
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await API.getChatMessages(selectedVendor);
       setMessages(res.messages || []);
     } catch (err) {
       console.error('Error fetching chat:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
+  // Socket.io WebSocket Connection for Instant Push
+  useEffect(() => {
+    const socketUrl = window.location.origin.includes('localhost') ? 'http://localhost:5001' : window.location.origin;
+    socketRef.current = io(socketUrl);
+
+    socketRef.current.on('chat:message', (newMsg) => {
+      if (newMsg && newMsg.vendorId === selectedVendor) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === newMsg.id)) return prev;
+          return [...prev, newMsg];
+        });
+      }
+    });
+
+    return () => {
+      socketRef.current?.disconnect();
+    };
+  }, [selectedVendor]);
+
+  // Initial load + Silent 2s background polling fallback
   useEffect(() => {
     if (isOpen && selectedVendor) {
-      loadMessages();
-      const interval = setInterval(loadMessages, 2500); // 2.5s poll for snappy real-time messaging
+      fetchMessages(false);
+      const interval = setInterval(() => fetchMessages(true), 2000);
       return () => clearInterval(interval);
     }
   }, [isOpen, selectedVendor]);
 
+  // Smooth auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -54,8 +78,15 @@ export default function ChatDrawer({ isOpen, onClose }) {
     const messageContent = text;
     setText('');
     try {
-      await API.sendChatMessage(selectedVendor, messageContent);
-      await loadMessages();
+      const res = await API.sendChatMessage(selectedVendor, messageContent);
+      if (res?.message) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === res.message.id)) return prev;
+          return [...prev, res.message];
+        });
+      } else {
+        await fetchMessages(true);
+      }
     } catch (err) {
       console.error('Error sending message:', err);
     }
@@ -75,64 +106,76 @@ export default function ChatDrawer({ isOpen, onClose }) {
               </div>
               <div>
                 <h3 className="font-semibold text-lg">KickVault Live Chat</h3>
-                <p className="text-xs text-slate-400">Direct Vendor ↔ Admin Messenger</p>
+                <p className="text-xs text-slate-400">Instant WebSocket Messenger ⚡</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Admin Vendor Selector */}
+          {/* Admin Vendor Switcher Dropdown */}
           {user?.role === 'admin' && (
-            <div className="p-3 bg-slate-900 border-b border-slate-800 flex items-center gap-2">
-              <span className="text-xs text-slate-400 shrink-0 font-medium">Select Thread:</span>
+            <div className="px-5 py-3 bg-slate-900/80 border-b border-slate-800 flex items-center gap-2">
+              <span className="text-xs text-slate-400 font-medium">Select Thread:</span>
               <select
                 value={selectedVendor}
                 onChange={(e) => setSelectedVendor(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-violet-500"
+                className="flex-1 bg-slate-800 border border-slate-700 text-xs rounded-md px-2.5 py-1.5 focus:outline-none focus:border-violet-500"
               >
                 <option value="vendor1@example.test">Vendor One (Alpha Kicks Co)</option>
-                <option value="vendor2@example.test">Vendor Two (Beta Soles Co)</option>
+                <option value="vendor2@example.test">Vendor Two (Beta Soles)</option>
+                <option value="alanthomasbiju01@gmail.com">Alan Thomas Biju (KickVault HQ)</option>
               </select>
             </div>
           )}
 
-          {/* Messages Feed */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-[#0b0f19]">
+          {/* Messages Body */}
+          <div className="flex-1 overflow-y-auto p-5 space-y-4">
             {loading && messages.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 text-sm">Loading messages...</div>
+              <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+                Loading live chat...
+              </div>
             ) : messages.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 text-sm">
-                No messages yet. Send a note to start the conversation!
+              <div className="text-center py-12 text-slate-500 text-sm">
+                No chat history yet. Send a message to start direct communication.
               </div>
             ) : (
-              messages.map((m) => {
-                const isMe = m.senderEmail === user?.email;
+              messages.map((msg) => {
+                const isMe = msg.senderEmail === user?.email;
+                const isAdminMsg = msg.senderRole === 'admin';
+
                 return (
                   <div
-                    key={m.id}
+                    key={msg.id}
                     className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
                   >
-                    <div className="flex items-center gap-1.5 mb-1 px-1">
-                      <span className="text-[10px] font-semibold text-slate-400">
-                        {m.senderRole === 'admin' ? '🛡️ Admin' : `👟 ${m.senderEmail.split('@')[0]}`}
+                    <div className="flex items-center gap-1.5 mb-1 px-1 text-[11px] text-slate-400">
+                      <span className="font-semibold text-slate-300">
+                        {isAdminMsg ? '🛡️ Admin' : `🏷️ ${msg.senderEmail.split('@')[0]}`}
                       </span>
-                      <span className="text-[9px] text-slate-600">
-                        {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <span>•</span>
+                      <span>
+                        {new Date(msg.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </span>
                     </div>
+
                     <div
-                      className={`max-w-[82%] px-4 py-2.5 rounded-2xl text-xs leading-relaxed shadow-sm ${
+                      className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
                         isMe
-                          ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-tr-none'
-                          : 'bg-slate-800 border border-slate-700/80 text-slate-200 rounded-tl-none'
+                          ? 'bg-emerald-600 text-white rounded-br-none shadow-lg shadow-emerald-950/20'
+                          : isAdminMsg
+                          ? 'bg-emerald-900/60 text-emerald-100 border border-emerald-500/30 rounded-bl-none'
+                          : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-none'
                       }`}
                     >
-                      {m.message}
+                      {msg.message}
                     </div>
                   </div>
                 );
@@ -141,19 +184,19 @@ export default function ChatDrawer({ isOpen, onClose }) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSend} className="p-3 border-t border-slate-800 bg-[#0f172a] flex items-center gap-2">
+          {/* Input Box */}
+          <form onSubmit={handleSend} className="p-4 border-t border-slate-800 bg-[#0f172a] flex items-center gap-2">
             <input
               type="text"
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Type your message..."
-              className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
             />
             <button
               type="submit"
               disabled={!text.trim()}
-              className="p-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition-all disabled:opacity-50"
+              className="p-2.5 rounded-xl bg-emerald-500 text-slate-950 font-semibold hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md shadow-emerald-500/20"
             >
               <Send className="w-4 h-4" />
             </button>

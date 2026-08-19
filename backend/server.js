@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 import { fileURLToPath } from 'url';
 
 import { initDb } from './database.js';
@@ -24,6 +26,27 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+const server = http.createServer(app);
+
+// Initialize Socket.io Server for Instant 0ms WebSocket Messaging
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+
+io.on('connection', (socket) => {
+  socket.on('join_vendor_room', (vendorId) => {
+    socket.join(vendorId);
+  });
+});
+
+// Attach io to req for route handlers
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 // Initialize Database schema and seed initial data if missing
 initDb();
@@ -32,7 +55,6 @@ try {
 } catch (err) {
   console.log('Seed check skipped or already seeded.');
 }
-
 
 // Middlewares
 app.use(cors({ origin: true, credentials: true }));
@@ -62,6 +84,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
     app: 'KickVault Consignment Portal API',
+    websocket: 'enabled',
     timestamp: new Date().toISOString()
   });
 });
@@ -83,6 +106,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error occurred.' });
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 KickVault Consignment Backend running on http://localhost:${PORT}`);
 });

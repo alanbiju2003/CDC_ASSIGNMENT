@@ -60,6 +60,13 @@ router.post('/chat/:vendorId/messages', requireAuth, (req, res) => {
     `).run(`NOTIF-${Date.now()}`, recipientEmail, notificationTitle, message.trim().substring(0, 80) + '...', timestamp);
 
     const newMessage = db.prepare('SELECT * FROM chat_messages WHERE id = ?').get(id);
+
+    // Broadcast instant Socket.io WebSocket event
+    if (req.io) {
+      req.io.to(vendorId).emit('chat:message', newMessage);
+      req.io.emit('chat:message', newMessage);
+    }
+
     return res.status(201).json({ message: newMessage });
   } catch (err) {
     console.error('Error sending chat message:', err);
